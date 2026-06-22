@@ -1,0 +1,121 @@
+body {
+
+    font-family: Arial, sans-serif;
+
+    background: #eef2f7;
+
+    margin: 0;
+
+    padding: 20px;
+}
+
+.header {
+
+    background: #1f2937;
+
+    color: white;
+
+    padding: 20px;
+
+    text-align: center;
+
+    border-radius: 10px;
+
+    margin-bottom: 20px;
+}
+
+.dashboard {
+
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 15px;
+
+    margin-bottom: 20px;
+}
+
+.card {
+
+    background: white;
+
+    border-radius: 10px;
+
+    padding: 20px;
+
+    box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+
+    margin-bottom: 20px;
+}
+
+.card h3 {
+
+    margin-top: 0;
+}
+
+.value {
+
+    font-size: 30px;
+
+    font-weight: bold;
+}
+
+.control {
+
+    text-align: center;
+}
+
+button {
+
+    padding: 12px 20px;
+
+    margin: 5px;
+
+    border: none;
+
+    border-radius: 5px;
+
+    cursor: pointer;
+
+    font-size: 14px;
+}
+
+button:hover {
+
+    opacity: 0.9;
+}
+
+.warningCard {
+
+    background: #ffe5e5;
+}
+
+#warning {
+
+    color: red;
+
+    font-weight: bold;
+
+    font-size: 18px;
+}
+
+canvas {
+
+    max-height: 300px;
+}
+.header p{
+    opacity:0.8;
+}
+
+.value{
+    transition:0.3s;
+}
+
+button{
+    background:#1f2937;
+    color:white;
+}
+
+button:hover{
+    transform:scale(1.05);
+}

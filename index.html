@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Fuel & Speed Monitoring Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased matches-dark">
+
+    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+            <div class="bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20 text-white">
+                <i class="fa-solid fa-gauge-high text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">Telemetry System</h1>
+                <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> RP2350 Pico 2 W Connection
+                </p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <button onclick="startSystem()" class="cursor-pointer px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 font-semibold rounded-xl text-sm transition-all shadow-lg shadow-emerald-600/20 hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 text-white">
+                <i class="fa-solid fa-play"></i> START
+            </button>
+            <button onclick="stopSystem()" class="cursor-pointer px-5 py-2.5 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 font-semibold rounded-xl text-sm transition-all shadow-lg shadow-rose-600/20 hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 text-white">
+                <i class="fa-solid fa-stop"></i> STOP
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+        
+        <div id="warning-banner" class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-xl">
+            <div class="flex items-center gap-3">
+                <div class="p-3 bg-slate-800 rounded-xl text-amber-500" id="warning-icon-box">
+                    <i class="fa-solid fa-circle-info text-xl" id="warning-icon"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">System Status Message</span>
+                    <div id="warning" class="text-base font-bold text-slate-200 transition-colors duration-300">Monitoring Stopped</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <div class="bg-gradient-to-b from-slate-900 to-slate-900/40 border border-slate-800/80 rounded-2xl p-6 relative overflow-hidden group hover:border-slate-700 transition-all shadow-xl">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Current Speed</span>
+                    <span class="p-2 bg-slate-800/60 rounded-xl text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-all"><i class="fa-solid fa-bolt"></i></span>
+                </div>
+                <div class="flex items-baseline gap-2 mt-2">
+                    <span id="speed" class="text-5xl font-extrabold tracking-tight text-white transition-all">0</span>
+                    <span class="text-slate-400 font-medium text-sm">km/h</span>
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-800/60 flex items-center gap-1.5 text-xs text-slate-400">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Live updates from sensor
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-b from-slate-900 to-slate-900/40 border border-slate-800/80 rounded-2xl p-6 relative overflow-hidden group hover:border-slate-700 transition-all shadow-xl">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Fuel Status</span>
+                    <span class="p-2 bg-slate-800/60 rounded-xl text-amber-400 group-hover:bg-amber-500 group-hover:text-white transition-all"><i class="fa-solid fa-gas-pump"></i></span>
+                </div>
+                <div class="flex items-baseline gap-1 mt-2">
+                    <span id="fuel" class="text-4xl font-extrabold tracking-tight text-white transition-all">LOW</span>
+                </div>
+                <div class="mt-5 pt-4 border-t border-slate-800/60 flex items-center gap-1.5 text-xs text-slate-400">
+                    <i class="fa-solid fa-chart-simple"></i> Consumption rate factor
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-b from-slate-900 to-slate-900/40 border border-slate-800/80 rounded-2xl p-6 sm:col-span-2 lg:col-span-1 shadow-xl flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Active Drive Mode</span>
+                        <span id="mode-badge" class="px-2.5 py-1 text-[10px] font-bold uppercase rounded-md bg-slate-800 text-slate-300">LIVE</span>
+                    </div>
+                    <div class="text-3xl font-black text-white tracking-tight my-2" id="mode">ECO (AUTO)</div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <button onclick="setMode('ECO')" class="cursor-pointer p-3 bg-slate-800 hover:bg-emerald-950/40 hover:border-emerald-500/50 border border-slate-700/50 rounded-xl font-bold text-xs text-center transition-all flex flex-col items-center gap-2 text-slate-200">
+                        <i class="fa-solid fa-leaf text-base text-emerald-500"></i> ECO OVERRIDE
+                    </button>
+                    <button onclick="setMode('SPORT')" class="cursor-pointer p-3 bg-slate-800 hover:bg-rose-950/40 hover:border-rose-500/50 border border-slate-700/50 rounded-xl font-bold text-xs text-center transition-all flex flex-col items-center gap-2 text-slate-200">
+                        <i class="fa-solid fa-fire text-base text-rose-500"></i> SPORT OVERRIDE
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-indigo-500"></i>
+                        <h3 class="font-bold text-base text-slate-200">Speed Analysis Curve</h3>
+                    </div>
+                    <span class="text-[11px] text-slate-400 bg-slate-800 px-2 py-1 rounded">Real-time (km/h)</span>
+                </div>
+                <div class="w-full bg-slate-950/50 p-2 rounded-xl border border-slate-800/40">
+                    <canvas id="speedChart" class="max-h-[260px] w-full"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col">
+                <div class="flex items-center gap-2 mb-5">
+                    <i class="fa-solid fa-flag-checkered text-indigo-500"></i>
+                    <h3 class="font-bold text-base text-slate-200">Journey Summary</h3>
+                </div>
+                
+                <div class="space-y-4 flex-1 flex flex-col justify-center">
+                    <div class="bg-slate-950/50 border border-slate-800/40 p-4 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 bg-rose-500/10 text-rose-500 rounded-lg flex items-center justify-center"><i class="fa-solid fa-crown"></i></div>
+                            <span class="text-sm font-medium text-slate-400">Maximum Speed</span>
+                        </div>
+                        <div class="text-right">
+                            <span id="maxSpeed" class="text-xl font-black text-white">0</span> <span class="text-xs text-slate-500">km/h</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950/50 border border-slate-800/40 p-4 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 bg-indigo-500/10 text-indigo-500 rounded-lg flex items-center justify-center"><i class="fa-solid fa-calculator"></i></div>
+                            <span class="text-sm font-medium text-slate-400">Average Speed</span>
+                        </div>
+                        <div class="text-right">
+                            <span id="avgSpeed" class="text-xl font-black text-white">0</span> <span class="text-xs text-slate-500">km/h</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    </main>
+
+    <script type="module" src="firebase.js"></script>
+    <script type="module" src="script.js"></script>
+</body>
+</html>
