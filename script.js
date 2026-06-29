@@ -1,4 +1,4 @@
-// --- REQUEST PERMISSION UNTUK NOTIFIKASI BROWSER ---
+// --- BROWSER GLOBAL NOTIFICATION SYSTEM CONFIG ---
 if ("Notification" in window) {
     if (Notification.permission !== "granted" && Notification.permission !== "denied") {
         Notification.requestPermission();
@@ -12,7 +12,7 @@ let totalSpeed = 0;
 let totalData = 0;
 let t = 0;
 
-// Konfigurasi Graf Chart.js
+// Chart.js Setup
 const ctx = document.getElementById("speedChart");
 let speedChart = null;
 
@@ -113,9 +113,9 @@ window.stopSystem = stopSystem;
 
 function initFirebaseListeners() {
     if (window.db && window.ref && window.onValue) {
-        console.log("Firebase Listeners Aktif!");
+        console.log("Firebase Global Listeners Connected!");
         
-        // 1. Dengar Status Sistem
+        // 1. System Operational Status Listener
         window.onValue(window.ref(window.db, "status"), (snapshot) => {
             const currentStatus = snapshot.val() || "STOP";
             if (currentStatus === "START") {
@@ -130,7 +130,7 @@ function initFirebaseListeners() {
             }
         });
 
-        // 2. Dengar Kelajuan & Update Graf
+        // 2. Real-time Velocity & Graph Update Listener
         window.onValue(window.ref(window.db, "speed"), (snapshot) => {
             if (!monitoring) return;
             const speed = Number(snapshot.val()) || 0;
@@ -158,7 +158,7 @@ function initFirebaseListeners() {
             }
         });
 
-        // 3. Dengar Mod Live
+        // 3. Drive Mode Sync Listener
         window.onValue(window.ref(window.db, "current_live_mode"), (snapshot) => {
             const liveMode = snapshot.val() || "ECO";
             if (monitoring && selectedMode === "AUTO") {
@@ -174,7 +174,7 @@ function initFirebaseListeners() {
             }
         });
 
-        // 4. Dengar Status Minyak
+        // 4. Fuel Diagnostics Status Listener
         window.onValue(window.ref(window.db, "fuel"), (snapshot) => {
             const fuelVal = snapshot.val();
             if (monitoring && fuelVal && document.getElementById("fuel")) {
@@ -182,7 +182,7 @@ function initFirebaseListeners() {
             }
         });
 
-        // 5. Dengar Amaran Bahaya + Hantar Notifikasi Browser (BERSIH & NO DUPLICATE)
+        // 5. Warning Diagnostics + Enforced Browser Alert Engine
         let lastNotificationTime = 0; 
 
         window.onValue(window.ref(window.db, "warning"), (snapshot) => {
@@ -192,20 +192,19 @@ function initFirebaseListeners() {
                 const banner = document.getElementById("warning-banner");
                 const iconBox = document.getElementById("warning-icon-box");
                 
-                // Menggunakan .toUpperCase() supaya dia tak kisah huruf besar/kecil dari Arduino kau
                 if (msg.toUpperCase().includes("OVER LIMIT") && banner && iconBox) {
                     banner.className = "bg-rose-950/40 border border-rose-500/50 rounded-2xl p-4 flex items-center justify-between shadow-xl shadow-rose-950/20 animate-pulse";
                     iconBox.className = "p-3 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/30";
                     document.getElementById("warning").style.color = "#f43f5e";
 
-                    // TRIGGER NOTIFIKASI
-                    let masaSekarang = Date.now();
-                    if (Notification.permission === "granted" && (masaSekarang - lastNotificationTime > 5000)) {
-                        lastNotificationTime = masaSekarang;
+                    // TRIGGER NOTIFICATION POP-UP ENGINE
+                    let currentTime = Date.now();
+                    if (Notification.permission === "granted" && (currentTime - lastNotificationTime > 5000)) {
+                        lastNotificationTime = currentTime;
                         const liveSpeed = document.getElementById("speed") ? document.getElementById("speed").innerText : "High";
 
                         new Notification("🚨 SMART FUEL SYSTEM: OVER LIMIT!", {
-                            body: `⚠️ ${msg}! Kelajuan semasa: ${liveSpeed} km/h.`,
+                            body: `⚠️ ${msg}! Current Velocity: ${liveSpeed} km/h. Automatic deceleration system activated.`,
                             icon: "https://cdn-icons-png.flaticon.com/512/179/179386.png",
                             tag: "overlimit-alert"
                         });
