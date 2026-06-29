@@ -107,7 +107,6 @@ function resetWarningStyle() {
     if (warningText) warningText.style.color = "#e2e8f0";
 }
 
-// Bind fungsi ke tetingkap global window
 window.setMode = setMode;
 window.startSystem = startSystem;
 window.stopSystem = stopSystem;
@@ -131,7 +130,7 @@ function initFirebaseListeners() {
             }
         });
 
-        // 2. Dengar Kelajuan & Kemas Kini Graf
+        // 2. Dengar Kelajuan & Update Graf
         window.onValue(window.ref(window.db, "speed"), (snapshot) => {
             if (!monitoring) return;
             const speed = Number(snapshot.val()) || 0;
@@ -159,7 +158,7 @@ function initFirebaseListeners() {
             }
         });
 
-        // 3. Dengar Mod Pemaduan Live
+        // 3. Dengar Mod Live
         window.onValue(window.ref(window.db, "current_live_mode"), (snapshot) => {
             const liveMode = snapshot.val() || "ECO";
             if (monitoring && selectedMode === "AUTO") {
@@ -175,7 +174,7 @@ function initFirebaseListeners() {
             }
         });
 
-        // 4. Dengar Status Tahap Minyak
+        // 4. Dengar Status Minyak
         window.onValue(window.ref(window.db, "fuel"), (snapshot) => {
             const fuelVal = snapshot.val();
             if (monitoring && fuelVal && document.getElementById("fuel")) {
@@ -183,7 +182,7 @@ function initFirebaseListeners() {
             }
         });
 
-        // 5. Dengar Amaran Bahaya + Cetus Notifikasi Browser Pop-up
+        // 5. Dengar Amaran Bahaya + Hantar Notifikasi Browser (BERSIH & NO DUPLICATE)
         let lastNotificationTime = 0; 
 
         window.onValue(window.ref(window.db, "warning"), (snapshot) => {
@@ -193,19 +192,20 @@ function initFirebaseListeners() {
                 const banner = document.getElementById("warning-banner");
                 const iconBox = document.getElementById("warning-icon-box");
                 
-                if (msg.includes("OVER LIMIT") && banner && iconBox) {
+                // Menggunakan .toUpperCase() supaya dia tak kisah huruf besar/kecil dari Arduino kau
+                if (msg.toUpperCase().includes("OVER LIMIT") && banner && iconBox) {
                     banner.className = "bg-rose-950/40 border border-rose-500/50 rounded-2xl p-4 flex items-center justify-between shadow-xl shadow-rose-950/20 animate-pulse";
                     iconBox.className = "p-3 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/30";
                     document.getElementById("warning").style.color = "#f43f5e";
 
-                    // LOGIK TRIGGER NOTIFIKASI
+                    // TRIGGER NOTIFIKASI
                     let masaSekarang = Date.now();
                     if (Notification.permission === "granted" && (masaSekarang - lastNotificationTime > 5000)) {
                         lastNotificationTime = masaSekarang;
                         const liveSpeed = document.getElementById("speed") ? document.getElementById("speed").innerText : "High";
 
                         new Notification("🚨 SMART FUEL SYSTEM: OVER LIMIT!", {
-                            body: `⚠️ Kenderaan memandu laju pada kelajuan ${liveSpeed} km/h! Sistem perlambatan automatik diaktifkan.`,
+                            body: `⚠️ ${msg}! Kelajuan semasa: ${liveSpeed} km/h.`,
                             icon: "https://cdn-icons-png.flaticon.com/512/179/179386.png",
                             tag: "overlimit-alert"
                         });
@@ -221,7 +221,6 @@ function initFirebaseListeners() {
     }
 }
 
-// Jalankan sistem selepas DOM sedia sepenuhnya
 window.addEventListener('DOMContentLoaded', () => {
     setTimeout(initFirebaseListeners, 1200);
 });
