@@ -1,4 +1,10 @@
-// Menggunakan konfigurasi yang sama dari skop global/firebase.js
+// --- REQUEST PERMISSION UNTUK NOTIFIKASI BROWSER ---
+if ("Notification" in window) {
+    if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+        Notification.requestPermission();
+    }
+}
+
 let selectedMode = "AUTO"; 
 let monitoring = false;
 let maxSpeed = 0;
@@ -101,19 +107,18 @@ function resetWarningStyle() {
     if (warningText) warningText.style.color = "#e2e8f0";
 }
 
-// BIND KEPADA WINDOW SUPAYA HTML BOLEH PANGGIL WALAUPUN SCRIPT ADALAH MODULE
+// Bind fungsi ke tetingkap global window
 window.setMode = setMode;
 window.startSystem = startSystem;
 window.stopSystem = stopSystem;
 
 function initFirebaseListeners() {
-    // Semak komponen window daripada eksport firebase.js
     if (window.db && window.ref && window.onValue) {
         console.log("Firebase Listeners Aktif!");
         
         // 1. Dengar Status Sistem
         window.onValue(window.ref(window.db, "status"), (snapshot) => {
-            const currentStatus = snapshot.val();
+            const currentStatus = snapshot.val() || "STOP";
             if (currentStatus === "START") {
                 monitoring = true;
             } else {
@@ -121,11 +126,12 @@ function initFirebaseListeners() {
                 if (document.getElementById("speed")) document.getElementById("speed").innerHTML = "0";
                 if (document.getElementById("fuel")) document.getElementById("fuel").innerHTML = "LOW";
                 if (document.getElementById("warning")) document.getElementById("warning").innerHTML = "Monitoring Stopped";
+                if (document.getElementById("mode")) document.getElementById("mode").innerHTML = "---";
                 resetWarningStyle();
             }
         });
 
-        // 2. Dengar Kelajuan & Update Graf
+        // 2. Dengar Kelajuan & Kemas Kini Graf
         window.onValue(window.ref(window.db, "speed"), (snapshot) => {
             if (!monitoring) return;
             const speed = Number(snapshot.val()) || 0;
@@ -153,7 +159,7 @@ function initFirebaseListeners() {
             }
         });
 
-        // 3. Dengar Mod Live
+        // 3. Dengar Mod Pemaduan Live
         window.onValue(window.ref(window.db, "current_live_mode"), (snapshot) => {
             const liveMode = snapshot.val() || "ECO";
             if (monitoring && selectedMode === "AUTO") {
@@ -169,7 +175,7 @@ function initFirebaseListeners() {
             }
         });
 
-        // 4. Dengar Status Minyak
+        // 4. Dengar Status Tahap Minyak
         window.onValue(window.ref(window.db, "fuel"), (snapshot) => {
             const fuelVal = snapshot.val();
             if (monitoring && fuelVal && document.getElementById("fuel")) {
@@ -177,7 +183,9 @@ function initFirebaseListeners() {
             }
         });
 
-        // 5. Dengar Amaran Bahaya
+        // 5. Dengar Amaran Bahaya + Cetus Notifikasi Browser Pop-up
+        let lastNotificationTime = 0; 
+
         window.onValue(window.ref(window.db, "warning"), (snapshot) => {
             const msg = snapshot.val() || "System Normal";
             if (monitoring && document.getElementById("warning")) {
@@ -189,6 +197,19 @@ function initFirebaseListeners() {
                     banner.className = "bg-rose-950/40 border border-rose-500/50 rounded-2xl p-4 flex items-center justify-between shadow-xl shadow-rose-950/20 animate-pulse";
                     iconBox.className = "p-3 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/30";
                     document.getElementById("warning").style.color = "#f43f5e";
+
+                    // LOGIK TRIGGER NOTIFIKASI
+                    let masaSekarang = Date.now();
+                    if (Notification.permission === "granted" && (masaSekarang - lastNotificationTime > 5000)) {
+                        lastNotificationTime = masaSekarang;
+                        const liveSpeed = document.getElementById("speed") ? document.getElementById("speed").innerText : "High";
+
+                        new Notification("🚨 SMART FUEL SYSTEM: OVER LIMIT!", {
+                            body: `⚠️ Kenderaan memandu laju pada kelajuan ${liveSpeed} km/h! Sistem perlambatan automatik diaktifkan.`,
+                            icon: "https://cdn-icons-png.flaticon.com/512/179/179386.png",
+                            tag: "overlimit-alert"
+                        });
+                    }
                 } else {
                     resetWarningStyle();
                 }
@@ -200,7 +221,7 @@ function initFirebaseListeners() {
     }
 }
 
-// Jalankan pembacaan selepas tetingkap sedia
+// Jalankan sistem selepas DOM sedia sepenuhnya
 window.addEventListener('DOMContentLoaded', () => {
     setTimeout(initFirebaseListeners, 1200);
 });

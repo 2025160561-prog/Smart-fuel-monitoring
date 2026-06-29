@@ -142,7 +142,20 @@
         </div>
     </main>
 
-    </main>
+    <script>
+        if ("Notification" in window) {
+            if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission().then(permission => {
+                    console.log("Izin Notifikasi Diubah:", permission);
+                    if (permission === "granted") {
+                        new Notification("🚨 SYSTEM ONLINE", {
+                            body: "Dashboard Telemetri berjaya dihubungkan ke sistem Notifikasi Browser!"
+                        });
+                    }
+                });
+            }
+        }
+    </script>
 
     <script type="module" src="firebase.js"></script>
     <script type="module" src="script.js"></script>
