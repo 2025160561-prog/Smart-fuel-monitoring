@@ -10,7 +10,9 @@ let maxSpeed = 0;
 let totalSpeed = 0;
 let totalData = 0;
 
-// Setup Chart Kelajuan (Line Chart vs Time)
+// ==========================================
+// 📈 1. SETUP GRAF KELAJUAN (SPEED CURVE VS TIME)
+// ==========================================
 const ctxSpeed = document.getElementById("speedChart");
 let speedChart = null;
 if (ctxSpeed) {
@@ -40,30 +42,38 @@ if (ctxSpeed) {
     });
 }
 
-// Setup Graf Minyak (Bar Indicator)
+// ==========================================
+// ⛽ 2. SETUP GRAF MINYAK BARU (FUEL CURVE VS TIME)
+// ==========================================
 const ctxFuel = document.getElementById("fuelChart");
 let fuelChart = null;
 if (ctxFuel) {
     fuelChart = new Chart(ctxFuel, {
-        type: "bar",
+        type: "line", // Tukar dari 'bar' ke 'line' seperti speed chart
         data: {
-            labels: ["Fuel Tank Volume"],
+            labels: [], // Menggunakan timeline masa juga
             datasets: [{
                 label: "Fuel Level (%)",
-                data: [100], 
-                backgroundColor: "rgba(16, 185, 129, 0.5)", 
-                borderColor: "#10b981", 
-                borderWidth: 2,
-                borderRadius: 8,
-                barThickness: 60 
+                data: [], 
+                backgroundColor: "rgba(16, 185, 129, 0.15)", // Warna hijau pudar di bawah curve
+                borderColor: "#10b981", // Warna garisan curve (akan tukar dinamik nanti)
+                borderWidth: 3,
+                pointRadius: 2,
+                tension: 0.3, // Membuatkan garisan nampak melengkung smooth
+                fill: true
             }]
         },
         options: {
             responsive: true,
             plugins: { legend: { display: false } },
             scales: {
-                y: { grid: { color: "rgba(51, 65, 85, 0.3)" }, ticks: { color: "#94a3b8" }, beginAtZero: true, max: 100 },
-                x: { grid: { display: false }, ticks: { color: "#94a3b8" } }
+                y: { 
+                    grid: { color: "rgba(51, 65, 85, 0.3)" }, 
+                    ticks: { color: "#94a3b8" }, 
+                    beginAtZero: true, 
+                    max: 100 // Tetapkan siling tangki minyak pada 100%
+                },
+                x: { grid: { display: false }, ticks: { color: "#94a3b8", maxRotation: 45, minRotation: 45 } }
             }
         }
     });
@@ -110,15 +120,16 @@ function stopSystem() {
     if (document.getElementById("warning")) document.getElementById("warning").innerHTML = "Monitoring Stopped";
     if (document.getElementById("mode")) document.getElementById("mode").innerHTML = "---";
     resetWarningStyle();
+    
+    // Reset kedua-dua graf bila STOP digerakkan
     if (speedChart) {
         speedChart.data.labels = [];
         speedChart.data.datasets[0].data = [];
         speedChart.update();
     }
     if (fuelChart) {
-        fuelChart.data.datasets[0].data[0] = 100;
-        fuelChart.data.datasets[0].backgroundColor = "rgba(16, 185, 129, 0.5)";
-        fuelChart.data.datasets[0].borderColor = "#10b981";
+        fuelChart.data.labels = [];
+        fuelChart.data.datasets[0].data = [];
         fuelChart.update();
     }
 }
@@ -146,6 +157,12 @@ function initFirebaseListeners() {
             else stopSystem();
         });
 
+        // ⏱️ Ambil waktu cap peranti yang sama untuk sinkronisasi paksi-X
+        function getFormattedTime() {
+            const now = new Date();
+            return now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+        }
+
         // 2. Speed Listener (Real-time Timeline Plotting)
         window.onValue(window.ref(window.db, "speed"), (snapshot) => {
             if (!monitoring) return;
@@ -161,11 +178,9 @@ function initFirebaseListeners() {
             if (document.getElementById("avgSpeed")) document.getElementById("avgSpeed").innerHTML = Math.round(totalSpeed / totalData);
 
             if (speedChart) {
-                const now = new Date();
-                const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
-                speedChart.data.labels.push(timeString);
+                speedChart.data.labels.push(getFormattedTime());
                 speedChart.data.datasets[0].data.push(speed);
-                if (speedChart.data.labels.length > 10) { 
+                if (speedChart.data.labels.length > 12) { 
                     speedChart.data.labels.shift();
                     speedChart.data.datasets[0].data.shift();
                 }
@@ -181,7 +196,7 @@ function initFirebaseListeners() {
             if (monitoring && selectedMode !== "AUTO") updateModeUI(selectedMode, true);
         });
 
-        // 4. Fuel Listener & Critical Refuel Notification
+        // 4. Fuel Listener (Kini diubah suai ke bentuk Line/Curve Analisis)
         let lastFuelAlertTime = 0;
         window.onValue(window.ref(window.db, "fuel"), (snapshot) => {
             const fuelVal = snapshot.val();
@@ -190,10 +205,20 @@ function initFirebaseListeners() {
                 document.getElementById("fuel").innerHTML = numericFuel + "%";
                 
                 if (fuelChart) {
-                    fuelChart.data.datasets[0].data[0] = numericFuel;
+                    // Masukkan data masa dan peratus minyak ke graf talian
+                    fuelChart.data.labels.push(getFormattedTime());
+                    fuelChart.data.datasets[0].data.push(numericFuel);
+                    
+                    // Hadkan 12 data point sahaja di skrin supaya tak semak
+                    if (fuelChart.data.labels.length > 12) {
+                        fuelChart.data.labels.shift();
+                        fuelChart.data.datasets[0].data.shift();
+                    }
+
+                    // Dinamik Warna Garisan Curve mengikut volum baki
                     if (numericFuel <= 20) {
-                        fuelChart.data.datasets[0].backgroundColor = "rgba(244, 63, 94, 0.5)"; 
-                        fuelChart.data.datasets[0].borderColor = "#f43f5e";
+                        fuelChart.data.datasets[0].borderColor = "#f43f5e"; // Tukar curve jadi warna Merah
+                        fuelChart.data.datasets[0].backgroundColor = "rgba(244, 63, 94, 0.15)";
                         
                         // PUSH REFUEL NOTIFICATION
                         let timeNow = Date.now();
@@ -205,11 +230,11 @@ function initFirebaseListeners() {
                             });
                         }
                     } else if (numericFuel <= 50) {
-                        fuelChart.data.datasets[0].backgroundColor = "rgba(245, 158, 11, 0.5)"; 
-                        fuelChart.data.datasets[0].borderColor = "#f59e0b";
+                        fuelChart.data.datasets[0].borderColor = "#f59e0b"; // Tukar curve jadi warna Amber/Oren
+                        fuelChart.data.datasets[0].backgroundColor = "rgba(245, 158, 11, 0.15)";
                     } else {
-                        fuelChart.data.datasets[0].backgroundColor = "rgba(16, 185, 129, 0.5)"; 
-                        fuelChart.data.datasets[0].borderColor = "#10b981";
+                        fuelChart.data.datasets[0].borderColor = "#10b981"; // Kekal Hijau (Safe)
+                        fuelChart.data.datasets[0].backgroundColor = "rgba(16, 185, 129, 0.15)";
                     }
                     fuelChart.update();
                 }
