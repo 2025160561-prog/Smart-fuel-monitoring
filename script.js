@@ -43,23 +43,23 @@ if (ctxSpeed) {
 }
 
 // ==========================================
-// ⛽ 2. SETUP GRAF MINYAK BARU (FUEL CURVE VS TIME)
+// ⛽ 2. SETUP GRAF MINYAK (FUEL CURVE VS TIME) - PAKSI X MASA SIAP!
 // ==========================================
 const ctxFuel = document.getElementById("fuelChart");
 let fuelChart = null;
 if (ctxFuel) {
     fuelChart = new Chart(ctxFuel, {
-        type: "line", // Tukar dari 'bar' ke 'line' seperti speed chart
+        type: "line", 
         data: {
-            labels: [], // Menggunakan timeline masa juga
+            labels: [], // Paksi-X akan diisi dengan data Masa (Timestamp) secara automatik
             datasets: [{
                 label: "Fuel Level (%)",
                 data: [], 
-                backgroundColor: "rgba(16, 185, 129, 0.15)", // Warna hijau pudar di bawah curve
-                borderColor: "#10b981", // Warna garisan curve (akan tukar dinamik nanti)
+                backgroundColor: "rgba(16, 185, 129, 0.15)", 
+                borderColor: "#10b981", 
                 borderWidth: 3,
                 pointRadius: 2,
-                tension: 0.3, // Membuatkan garisan nampak melengkung smooth
+                tension: 0.3, 
                 fill: true
             }]
         },
@@ -71,9 +71,16 @@ if (ctxFuel) {
                     grid: { color: "rgba(51, 65, 85, 0.3)" }, 
                     ticks: { color: "#94a3b8" }, 
                     beginAtZero: true, 
-                    max: 100 // Tetapkan siling tangki minyak pada 100%
+                    max: 100 
                 },
-                x: { grid: { display: false }, ticks: { color: "#94a3b8", maxRotation: 45, minRotation: 45 } }
+                x: { 
+                    grid: { display: false }, 
+                    ticks: { 
+                        color: "#94a3b8", 
+                        maxRotation: 45, // Biar tulisan jam tu condong sikit, tak bertindih
+                        minRotation: 45 
+                    } 
+                }
             }
         }
     });
@@ -121,7 +128,6 @@ function stopSystem() {
     if (document.getElementById("mode")) document.getElementById("mode").innerHTML = "---";
     resetWarningStyle();
     
-    // Reset kedua-dua graf bila STOP digerakkan
     if (speedChart) {
         speedChart.data.labels = [];
         speedChart.data.datasets[0].data = [];
@@ -157,7 +163,7 @@ function initFirebaseListeners() {
             else stopSystem();
         });
 
-        // ⏱️ Ambil waktu cap peranti yang sama untuk sinkronisasi paksi-X
+        // Fungsi pembantu dapatkan jam waktu sekarang
         function getFormattedTime() {
             const now = new Date();
             return now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
@@ -196,7 +202,7 @@ function initFirebaseListeners() {
             if (monitoring && selectedMode !== "AUTO") updateModeUI(selectedMode, true);
         });
 
-        // 4. Fuel Listener (Kini diubah suai ke bentuk Line/Curve Analisis)
+        // 4. Fuel Listener (Paksi-X Masa Berfungsi Di Sini)
         let lastFuelAlertTime = 0;
         window.onValue(window.ref(window.db, "fuel"), (snapshot) => {
             const fuelVal = snapshot.val();
@@ -205,22 +211,22 @@ function initFirebaseListeners() {
                 document.getElementById("fuel").innerHTML = numericFuel + "%";
                 
                 if (fuelChart) {
-                    // Masukkan data masa dan peratus minyak ke graf talian
+                    // Masukkan label masa laptop ke paksi-X graf minyak
                     fuelChart.data.labels.push(getFormattedTime());
+                    // Masukkan nilai peratus minyak ke paksi-Y graf minyak
                     fuelChart.data.datasets[0].data.push(numericFuel);
                     
-                    // Hadkan 12 data point sahaja di skrin supaya tak semak
+                    // Kekalkan had paparan 12 data point sahaja supaya graf bergerak smooth
                     if (fuelChart.data.labels.length > 12) {
                         fuelChart.data.labels.shift();
                         fuelChart.data.datasets[0].data.shift();
                     }
 
-                    // Dinamik Warna Garisan Curve mengikut volum baki
+                    // Logik penukaran warna garisan curve
                     if (numericFuel <= 20) {
-                        fuelChart.data.datasets[0].borderColor = "#f43f5e"; // Tukar curve jadi warna Merah
+                        fuelChart.data.datasets[0].borderColor = "#f43f5e"; 
                         fuelChart.data.datasets[0].backgroundColor = "rgba(244, 63, 94, 0.15)";
                         
-                        // PUSH REFUEL NOTIFICATION
                         let timeNow = Date.now();
                         if (Notification.permission === "granted" && (timeNow - lastFuelAlertTime > 10000)) {
                             lastFuelAlertTime = timeNow;
@@ -230,10 +236,10 @@ function initFirebaseListeners() {
                             });
                         }
                     } else if (numericFuel <= 50) {
-                        fuelChart.data.datasets[0].borderColor = "#f59e0b"; // Tukar curve jadi warna Amber/Oren
+                        fuelChart.data.datasets[0].borderColor = "#f59e0b"; 
                         fuelChart.data.datasets[0].backgroundColor = "rgba(245, 158, 11, 0.15)";
                     } else {
-                        fuelChart.data.datasets[0].borderColor = "#10b981"; // Kekal Hijau (Safe)
+                        fuelChart.data.datasets[0].borderColor = "#10b981"; 
                         fuelChart.data.datasets[0].backgroundColor = "rgba(16, 185, 129, 0.15)";
                     }
                     fuelChart.update();
