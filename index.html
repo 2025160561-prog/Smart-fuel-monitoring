@@ -73,10 +73,10 @@
                     <span class="p-2 bg-slate-800/60 rounded-xl text-amber-400 group-hover:bg-amber-500 group-hover:text-white transition-all"><i class="fa-solid fa-gas-pump"></i></span>
                 </div>
                 <div class="flex items-baseline gap-1 mt-2">
-                    <span id="fuel" class="text-4xl font-extrabold tracking-tight text-white transition-all">LOW</span>
+                    <span id="fuel" class="text-4xl font-extrabold tracking-tight text-white transition-all">100%</span>
                 </div>
                 <div class="mt-5 pt-4 border-t border-slate-800/60 flex items-center gap-1.5 text-xs text-slate-400">
-                    <i class="fa-solid fa-chart-simple"></i> Consumption rate factor
+                    <i class="fa-solid fa-chart-simple"></i> Dynamic consumption rate
                 </div>
             </div>
 
@@ -100,46 +100,57 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-chart-line text-indigo-500"></i>
                         <h3 class="font-bold text-base text-slate-200">Speed Analysis Curve</h3>
                     </div>
-                    <span class="text-[11px] text-slate-400 bg-slate-800 px-2 py-1 rounded">Real-time (km/h)</span>
+                    <span class="text-[11px] text-slate-400 bg-slate-800 px-2 py-1 rounded">Y: Speed (km/h) | X: Time</span>
                 </div>
                 <div class="w-full bg-slate-950/50 p-2 rounded-xl border border-slate-800/40">
-                    <canvas id="speedChart" class="max-h-[260px] w-full"></canvas>
+                    <canvas id="speedChart" class="max-h-[240px] w-full"></canvas>
                 </div>
             </div>
 
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col">
-                <div class="flex items-center gap-2 mb-5">
-                    <i class="fa-solid fa-flag-checkered text-indigo-500"></i>
-                    <h3 class="font-bold text-base text-slate-200">Journey Summary</h3>
-                </div>
-                
-                <div class="space-y-4 flex-1 flex flex-col justify-center">
-                    <div class="bg-slate-950/50 border border-slate-800/40 p-4 rounded-xl flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 bg-rose-500/10 text-rose-500 rounded-lg flex items-center justify-center"><i class="fa-solid fa-crown"></i></div>
-                            <span class="text-sm font-medium text-slate-400">Maximum Speed</span>
-                        </div>
-                        <div class="text-right">
-                            <span id="maxSpeed" class="text-xl font-black text-white">0</span> <span class="text-xs text-slate-500">km/h</span>
-                        </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-gas-pump text-amber-500"></i>
+                        <h3 class="font-bold text-base text-slate-200">Fuel Level Bar Indicator</h3>
                     </div>
+                    <span class="text-[11px] text-slate-400 bg-slate-800 px-2 py-1 rounded">Y: Volume (%)</span>
+                </div>
+                <div class="w-full bg-slate-950/50 p-2 rounded-xl border border-slate-800/40">
+                    <canvas id="fuelChart" class="max-h-[240px] w-full"></canvas>
+                </div>
+            </div>
+        </div>
 
-                    <div class="bg-slate-950/50 border border-slate-800/40 p-4 rounded-xl flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 bg-indigo-500/10 text-indigo-500 rounded-lg flex items-center justify-center"><i class="fa-solid fa-calculator"></i></div>
-                            <span class="text-sm font-medium text-slate-400">Average Speed</span>
-                        </div>
-                        <div class="text-right">
-                            <span id="avgSpeed" class="text-xl font-black text-white">0</span> <span class="text-xs text-slate-500">km/h</span>
-                        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+            <div class="flex items-center gap-2 mb-4">
+                <i class="fa-solid fa-flag-checkered text-indigo-500"></i>
+                <h3 class="font-bold text-base text-slate-200">Journey Summary</h3>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="bg-slate-950/50 border border-slate-800/40 p-4 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 bg-rose-500/10 text-rose-500 rounded-lg flex items-center justify-center"><i class="fa-solid fa-crown"></i></div>
+                        <span class="text-sm font-medium text-slate-400">Maximum Speed</span>
+                    </div>
+                    <div class="text-right">
+                        <span id="maxSpeed" class="text-xl font-black text-white">0</span> <span class="text-xs text-slate-500">km/h</span>
+                    </div>
+                </div>
+                <div class="bg-slate-950/50 border border-slate-800/40 p-4 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 bg-indigo-500/10 text-indigo-500 rounded-lg flex items-center justify-center"><i class="fa-solid fa-calculator"></i></div>
+                        <span class="text-sm font-medium text-slate-400">Average Speed</span>
+                    </div>
+                    <div class="text-right">
+                        <span id="avgSpeed" class="text-xl font-black text-white">0</span> <span class="text-xs text-slate-500">km/h</span>
                     </div>
                 </div>
             </div>

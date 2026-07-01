@@ -1,4 +1,3 @@
-// --- BROWSER GLOBAL NOTIFICATION SYSTEM CONFIG ---
 if ("Notification" in window) {
     if (Notification.permission !== "granted" && Notification.permission !== "denied") {
         Notification.requestPermission();
@@ -10,20 +9,18 @@ let monitoring = false;
 let maxSpeed = 0;
 let totalSpeed = 0;
 let totalData = 0;
-let t = 0;
 
-// Chart.js Setup
-const ctx = document.getElementById("speedChart");
+// Setup Chart Kelajuan (Line Chart vs Time)
+const ctxSpeed = document.getElementById("speedChart");
 let speedChart = null;
-
-if (ctx) {
-    speedChart = new Chart(ctx, {
+if (ctxSpeed) {
+    speedChart = new Chart(ctxSpeed, {
         type: "line",
         data: {
-            labels: [],
+            labels: [], 
             datasets: [{
-                label: "Speed Curve",
-                data: [],
+                label: "Speed Curve (km/h)",
+                data: [], 
                 backgroundColor: "rgba(99, 102, 241, 0.15)", 
                 borderColor: "#6366f1", 
                 borderWidth: 3,
@@ -36,15 +33,37 @@ if (ctx) {
             responsive: true,
             plugins: { legend: { display: false } },
             scales: {
-                y: {
-                    grid: { color: "rgba(51, 65, 85, 0.3)" },
-                    ticks: { color: "#94a3b8" },
-                    beginAtZero: true
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: { color: "#94a3b8" }
-                }
+                y: { grid: { color: "rgba(51, 65, 85, 0.3)" }, ticks: { color: "#94a3b8" }, beginAtZero: true },
+                x: { grid: { display: false }, ticks: { color: "#94a3b8", maxRotation: 45, minRotation: 45 } }
+            }
+        }
+    });
+}
+
+// Setup Graf Minyak (Bar Indicator)
+const ctxFuel = document.getElementById("fuelChart");
+let fuelChart = null;
+if (ctxFuel) {
+    fuelChart = new Chart(ctxFuel, {
+        type: "bar",
+        data: {
+            labels: ["Fuel Tank Volume"],
+            datasets: [{
+                label: "Fuel Level (%)",
+                data: [100], 
+                backgroundColor: "rgba(16, 185, 129, 0.5)", 
+                borderColor: "#10b981", 
+                borderWidth: 2,
+                borderRadius: 8,
+                barThickness: 60 
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { grid: { color: "rgba(51, 65, 85, 0.3)" }, ticks: { color: "#94a3b8" }, beginAtZero: true, max: 100 },
+                x: { grid: { display: false }, ticks: { color: "#94a3b8" } }
             }
         }
     });
@@ -65,7 +84,6 @@ function setMode(clickedMode) {
 function updateModeUI(modeName, isManual) {
     const modeEl = document.getElementById("mode");
     if (!modeEl) return;
-    
     if (isManual) {
         modeEl.innerHTML = modeName + " <span class='text-xs text-rose-500 font-bold bg-rose-500/10 px-2 py-0.5 rounded'>MANUAL</span>";
     } else {
@@ -77,7 +95,6 @@ function startSystem() {
     monitoring = true;
     if (document.getElementById("warning")) document.getElementById("warning").innerHTML = "Connecting to Pico...";
     if (document.getElementById("speed")) document.getElementById("speed").innerHTML = "---";
-    
     if (window.writeFirebase) {
         window.writeFirebase("status", "START");
         window.writeFirebase("mode", "AUTO");
@@ -87,21 +104,29 @@ function startSystem() {
 
 function stopSystem() {
     monitoring = false;
-    if (window.writeFirebase) {
-        window.writeFirebase("status", "STOP");
-    }
+    if (window.writeFirebase) window.writeFirebase("status", "STOP");
     if (document.getElementById("speed")) document.getElementById("speed").innerHTML = "0";
-    if (document.getElementById("fuel")) document.getElementById("fuel").innerHTML = "LOW";
+    if (document.getElementById("fuel")) document.getElementById("fuel").innerHTML = "100%";
     if (document.getElementById("warning")) document.getElementById("warning").innerHTML = "Monitoring Stopped";
     if (document.getElementById("mode")) document.getElementById("mode").innerHTML = "---";
     resetWarningStyle();
+    if (speedChart) {
+        speedChart.data.labels = [];
+        speedChart.data.datasets[0].data = [];
+        speedChart.update();
+    }
+    if (fuelChart) {
+        fuelChart.data.datasets[0].data[0] = 100;
+        fuelChart.data.datasets[0].backgroundColor = "rgba(16, 185, 129, 0.5)";
+        fuelChart.data.datasets[0].borderColor = "#10b981";
+        fuelChart.update();
+    }
 }
 
 function resetWarningStyle() {
     const banner = document.getElementById("warning-banner");
     const iconBox = document.getElementById("warning-icon-box");
     const warningText = document.getElementById("warning");
-    
     if (banner) banner.className = "bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-xl";
     if (iconBox) iconBox.className = "p-3 bg-slate-800 rounded-xl text-amber-500";
     if (warningText) warningText.style.color = "#e2e8f0";
@@ -113,28 +138,18 @@ window.stopSystem = stopSystem;
 
 function initFirebaseListeners() {
     if (window.db && window.ref && window.onValue) {
-        console.log("Firebase Global Listeners Connected!");
+        console.log("Firebase Connected!");
         
-        // 1. System Operational Status Listener
         window.onValue(window.ref(window.db, "status"), (snapshot) => {
             const currentStatus = snapshot.val() || "STOP";
-            if (currentStatus === "START") {
-                monitoring = true;
-            } else {
-                monitoring = false;
-                if (document.getElementById("speed")) document.getElementById("speed").innerHTML = "0";
-                if (document.getElementById("fuel")) document.getElementById("fuel").innerHTML = "LOW";
-                if (document.getElementById("warning")) document.getElementById("warning").innerHTML = "Monitoring Stopped";
-                if (document.getElementById("mode")) document.getElementById("mode").innerHTML = "---";
-                resetWarningStyle();
-            }
+            if (currentStatus === "START") monitoring = true;
+            else stopSystem();
         });
 
-        // 2. Real-time Velocity & Graph Update Listener
+        // 2. Speed Listener (Real-time Timeline Plotting)
         window.onValue(window.ref(window.db, "speed"), (snapshot) => {
             if (!monitoring) return;
             const speed = Number(snapshot.val()) || 0;
-            
             if (document.getElementById("speed")) document.getElementById("speed").innerHTML = speed;
 
             if (speed > maxSpeed) {
@@ -143,14 +158,14 @@ function initFirebaseListeners() {
             }
             totalSpeed += speed;
             totalData++;
-            if (document.getElementById("avgSpeed")) {
-                document.getElementById("avgSpeed").innerHTML = Math.round(totalSpeed / totalData);
-            }
+            if (document.getElementById("avgSpeed")) document.getElementById("avgSpeed").innerHTML = Math.round(totalSpeed / totalData);
 
             if (speedChart) {
-                speedChart.data.labels.push(t++);
+                const now = new Date();
+                const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+                speedChart.data.labels.push(timeString);
                 speedChart.data.datasets[0].data.push(speed);
-                if (speedChart.data.labels.length > 15) { 
+                if (speedChart.data.labels.length > 10) { 
                     speedChart.data.labels.shift();
                     speedChart.data.datasets[0].data.shift();
                 }
@@ -158,33 +173,51 @@ function initFirebaseListeners() {
             }
         });
 
-        // 3. Drive Mode Sync Listener
         window.onValue(window.ref(window.db, "current_live_mode"), (snapshot) => {
-            const liveMode = snapshot.val() || "ECO";
-            if (monitoring && selectedMode === "AUTO") {
-                updateModeUI(liveMode, false);
-            }
+            if (monitoring && selectedMode === "AUTO") updateModeUI(snapshot.val() || "ECO", false);
         });
-        
         window.onValue(window.ref(window.db, "mode"), (snapshot) => {
-            const currentM = snapshot.val() || "AUTO";
-            selectedMode = currentM;
-            if (monitoring && currentM !== "AUTO") {
-                updateModeUI(currentM, true);
-            }
+            selectedMode = snapshot.val() || "AUTO";
+            if (monitoring && selectedMode !== "AUTO") updateModeUI(selectedMode, true);
         });
 
-        // 4. Fuel Diagnostics Status Listener
+        // 4. Fuel Listener & Critical Refuel Notification
+        let lastFuelAlertTime = 0;
         window.onValue(window.ref(window.db, "fuel"), (snapshot) => {
             const fuelVal = snapshot.val();
             if (monitoring && fuelVal && document.getElementById("fuel")) {
-                document.getElementById("fuel").innerHTML = fuelVal;
+                const numericFuel = parseInt(fuelVal) || 0;
+                document.getElementById("fuel").innerHTML = numericFuel + "%";
+                
+                if (fuelChart) {
+                    fuelChart.data.datasets[0].data[0] = numericFuel;
+                    if (numericFuel <= 20) {
+                        fuelChart.data.datasets[0].backgroundColor = "rgba(244, 63, 94, 0.5)"; 
+                        fuelChart.data.datasets[0].borderColor = "#f43f5e";
+                        
+                        // PUSH REFUEL NOTIFICATION
+                        let timeNow = Date.now();
+                        if (Notification.permission === "granted" && (timeNow - lastFuelAlertTime > 10000)) {
+                            lastFuelAlertTime = timeNow;
+                            new Notification("🚨 LOW FUEL WARNING!", {
+                                body: `Fuel level dropped to ${numericFuel}%. Please refuel immediately!`,
+                                icon: "https://cdn-icons-png.flaticon.com/512/1134/1134140.png"
+                            });
+                        }
+                    } else if (numericFuel <= 50) {
+                        fuelChart.data.datasets[0].backgroundColor = "rgba(245, 158, 11, 0.5)"; 
+                        fuelChart.data.datasets[0].borderColor = "#f59e0b";
+                    } else {
+                        fuelChart.data.datasets[0].backgroundColor = "rgba(16, 185, 129, 0.5)"; 
+                        fuelChart.data.datasets[0].borderColor = "#10b981";
+                    }
+                    fuelChart.update();
+                }
             }
         });
 
-        // 5. Warning Diagnostics + Enforced Browser Alert Engine
-        let lastNotificationTime = 0; 
-
+        // 5. Warning Speed Banner Listener
+        let lastSpeedAlertTime = 0; 
         window.onValue(window.ref(window.db, "warning"), (snapshot) => {
             const msg = snapshot.val() || "System Normal";
             if (monitoring && document.getElementById("warning")) {
@@ -193,20 +226,16 @@ function initFirebaseListeners() {
                 const iconBox = document.getElementById("warning-icon-box");
                 
                 if (msg.toUpperCase().includes("OVER LIMIT") && banner && iconBox) {
-                    banner.className = "bg-rose-950/40 border border-rose-500/50 rounded-2xl p-4 flex items-center justify-between shadow-xl shadow-rose-950/20 animate-pulse";
-                    iconBox.className = "p-3 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/30";
+                    banner.className = "bg-rose-950/40 border border-rose-500/50 rounded-2xl p-4 flex items-center justify-between shadow-xl animate-pulse";
+                    iconBox.className = "p-3 bg-rose-500 text-white rounded-xl";
                     document.getElementById("warning").style.color = "#f43f5e";
 
-                    // TRIGGER NOTIFICATION POP-UP ENGINE
-                    let currentTime = Date.now();
-                    if (Notification.permission === "granted" && (currentTime - lastNotificationTime > 5000)) {
-                        lastNotificationTime = currentTime;
-                        const liveSpeed = document.getElementById("speed") ? document.getElementById("speed").innerText : "High";
-
-                        new Notification("🚨 SMART FUEL SYSTEM: OVER LIMIT!", {
-                            body: `⚠️ ${msg}! Current Velocity: ${liveSpeed} km/h. Automatic deceleration system activated.`,
-                            icon: "https://cdn-icons-png.flaticon.com/512/179/179386.png",
-                            tag: "overlimit-alert"
+                    let timeNow = Date.now();
+                    if (Notification.permission === "granted" && (timeNow - lastSpeedAlertTime > 10000)) {
+                        lastSpeedAlertTime = timeNow;
+                        new Notification("🚨 SYSTEM: OVER LIMIT!", {
+                            body: `${msg}. Speed violation detected.`,
+                            icon: "https://cdn-icons-png.flaticon.com/512/179/179386.png"
                         });
                     }
                 } else {
@@ -214,12 +243,8 @@ function initFirebaseListeners() {
                 }
             }
         });
-
     } else {
         setTimeout(initFirebaseListeners, 500);
     }
 }
-
-window.addEventListener('DOMContentLoaded', () => {
-    setTimeout(initFirebaseListeners, 1200);
-});
+window.addEventListener('DOMContentLoaded', () => { setTimeout(initFirebaseListeners, 1200); });
