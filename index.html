@@ -1,5 +1,87 @@
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Eco-Driving Telemetry</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
+
+    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+                <i class="fa-solid fa-gauge-high text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-black text-lg tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">ECO-DRIVE TELEMETRY</h1>
+                <p class="text-[10px] text-slate-500 font-bold tracking-widest uppercase">RP2350 IoT Project</p>
+            </div>
+        </div>
+        <button onclick="requestNotificationPermission()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-2 rounded-xl border border-slate-700 transition cursor-pointer">
+            <i class="fa-solid fa-bell mr-1.5 text-indigo-400"></i> Enable Alerts
+        </button>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-6 space-y-6">
+        
+        <div id="warning-banner" class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-xl">
+            <div class="flex items-center gap-4">
+                <div id="warning-icon-box" class="p-3 bg-slate-800 rounded-xl text-amber-500">
+                    <i class="fa-solid fa-triangle-exclamation text-xl animate-pulse"></i>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-500 uppercase font-black tracking-wider block">System Status</span>
+                    <span id="warning" class="font-bold text-slate-200">Waiting for Data...</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="startSystem()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-600/20 transition active:scale-95 cursor-pointer">START</button>
+                <button onclick="stopSystem()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow-lg shadow-rose-600/20 transition active:scale-95 cursor-pointer">STOP</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] text-slate-500 uppercase font-black tracking-wider block mb-1">Live Speed</span>
+                    <span id="speed" class="text-4xl font-black text-white tracking-tight">0</span> <span class="text-xs text-slate-500 font-bold">km/h</span>
+                </div>
+                <div class="w-12 h-12 bg-indigo-500/10 text-indigo-400 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-bolt"></i></div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] text-slate-500 uppercase font-black tracking-wider block mb-1">Fuel Remaining</span>
+                    <span id="fuel" class="text-4xl font-black text-white tracking-tight">100%</span>
+                </div>
+                <div class="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-gas-pump"></i></div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] text-slate-500 uppercase font-black tracking-wider block mb-1">Active Drive Mode</span>
+                    <div id="mode" class="text-xl font-bold text-slate-200 flex items-center gap-2 mt-1">---</div>
+                </div>
+                <div class="flex gap-1.5">
+                    <button onclick="setMode('ECO')" class="bg-slate-800 hover:bg-slate-700 text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-700 cursor-pointer">ECO</button>
+                    <button onclick="setMode('SPORT')" class="bg-slate-800 hover:bg-slate-700 text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-700 cursor-pointer">SPORT</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <h3 class="font-bold text-sm text-slate-400 mb-4 uppercase tracking-wider"><i class="fa-solid fa-chart-line mr-2 text-indigo-500"></i>Speed Analysis Curve</h3>
+                <canvas id="speedChart" class="w-full max-h-[260px]"></canvas>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <h3 class="font-bold text-sm text-slate-400 mb-4 uppercase tracking-wider"><i class="fa-solid fa-chart-area mr-2 text-emerald-500"></i>Fuel Consumption Rate</h3>
+                <canvas id="fuelChart" class="w-full max-h-[260px]"></canvas>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl lg:col-span-2">
                 <div class="flex items-center gap-2 mb-4">
                     <i class="fa-solid fa-flag-checkered text-indigo-500"></i>
@@ -17,7 +99,7 @@
                     </div>
                     <div class="bg-slate-950/50 border border-slate-800/40 p-4 rounded-xl flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 bg-indigo-500/10 text-indigo-500 rounded-lg flex items-center justify-center"><i class="fa-solid fa-calculator"></i></div>
+                            <div class="w-9 h-9 bg-indigo-500/10 text-indigo-400 rounded-lg flex items-center justify-center"><i class="fa-solid fa-calculator"></i></div>
                             <span class="text-sm font-medium text-slate-400">Average Speed</span>
                         </div>
                         <div class="text-right">
@@ -40,7 +122,6 @@
                     <p class="text-xs text-slate-500 text-center py-4">No previous journey recorded.</p>
                 </div>
             </div>
-
         </div>
     </main>
 
